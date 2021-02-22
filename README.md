@@ -1,7 +1,8 @@
 # coronascraper
 CLI for querying coronavirus world and local cases. ParseHub for scraping content
 
-This is an afternoon project: it is not considered "complete" or "the best version possible". 
+This is a pet project: it is not considered "complete" or "the best version possible".
+It is not regularly updated or supported in any way. You can reuse any part of the project freely.
 Maybe I'll update in the future with more features and perfect the shell calls.
 
  **USAGE**
