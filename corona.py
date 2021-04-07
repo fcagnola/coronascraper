@@ -1,66 +1,40 @@
 #!/usr/bin/env python3
 
-from api_parsehub import *
-import sys
+from datetime import date, timedelta
 import requests
-import json
+import csv
 import colorama
 from colorama import Fore, Back, Style
 colorama.init(autoreset=True)
 
+_BASE_URL = "https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-regioni/dpc-covid19-ita-regioni-latest.csv"
+
 class Data:
-    def __init__(self, api_key, proj_token):
-        self.api_key = api_key
-        self.proj_token = proj_token
-        self.params = {
-            "api_key": self.api_key
-        }
-        self.last_data()
+    def __init__(self):
+        self.fetch_data()
 
-    def update(self):           # Updates ParseHub data, requesting updated parse
-        response = requests.post(API_UPDATE_URL, self.params)
-        self.data = json.loads(response.text)
+    def fetch_data(self):
+        response = requests.get(_BASE_URL)
+        reader = csv.DictReader(response.text.splitlines())
+        data = {'nuovi_positivi':0, "tamponi":0}
+        for row in reader:
+            data['nuovi_positivi'] += int(row['nuovi_positivi'])
+            data['tamponi'] += int(row['tamponi'])
+            data[row['denominazione_regione']] = {'nuovi_positivi':int(row['nuovi_positivi']), "tamponi":int(row['tamponi'])}
+        self.data = data
 
-    def last_data(self):        # Fetches most recent data and assigns it to self.data
-        response = requests.get(API_GET_URL, self.params)
-        self.data = json.loads(response.text)
+    def nazionali(self):   
+        msg = f"{Fore.CYAN}Nuovi casi in Italia: {self.data['nuovi_positivi']}\nTestati: {self.data['tamponi']}"
+        return msg
 
-    def world_cases(self):      # Returns World Cases
-        d = self.data["world_stats"]
-        for content in d:
-            if content["name"] == "Coronavirus Cases:":
-                msg = f"{Fore.CYAN}New worldwide cases: {content['value']}"
-                return msg
-
-    def country(self, country):  # Returns country-specific cases and tests
-        d = self.data["country"]
-        for content in d:
-            if content["country_name"].lower() == country.lower():
-                msg = "{}New cases in {}: {} \nTests in {}: {}".format(Fore.CYAN, country.title(), content['new_cases'], country.title(), content['daily_tests'])
-                return msg
-        return Fore.RED + "error: gnò popo ffatta"
+    def regione(self, regione):  
+        msg = f"{Fore.CYAN}Nuovi casi in {regione.title()}: {self.data[regione.title()]['nuovi_positivi']}\nTestati: {self.data[regione.title()]['tamponi']}"
+        return msg
 
 
 # shell call will look like this: python3 corona.py {country name /or/ world}
 
-data = Data(API_KEY, PROJ_TOKEN)
-
-
-if len(sys.argv) >= 1:
-    if sys.argv[1] == "update":
-        data.update()
-        print("Update requested to Parsehub's API")
-    else:
-        country_input_name = sys.argv[1]
-        print(f"Fetching data for {Fore.YELLOW}{country_input_name.title()}")
-        if country_input_name.lower() != "world":
-            d = data.country(country_input_name)
-            print(d)
-        else:
-            d = data.world_cases()
-            print(d)
-else:
-    d = data.world_cases()
-    print(d)
-
+data = Data()
+print(data.nazionali())
+print(data.regione("lombardia"))
 
